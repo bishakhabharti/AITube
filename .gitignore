@@ -1,0 +1,17 @@
+# React
+node_modules/
+dist/
+
+# Spring Boot
+target/
+
+# Environment files
+.env
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+youtubeai/src/main/resources/application.properties
