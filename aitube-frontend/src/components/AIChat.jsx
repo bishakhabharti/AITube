@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
-function AIChat() {
+function AIChat({ videoTitle }) {
+
 
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);

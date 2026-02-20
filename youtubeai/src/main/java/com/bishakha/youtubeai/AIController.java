@@ -14,31 +14,35 @@ public class AIController {
     @PostMapping("/chat")
     public String chat(@RequestBody Map<String, String> request) {
 
-        String message = request.get("message");
-        String videoTitle = request.get("videoTitle");
+        try {
 
-        String prompt = "You are an AI assistant helping with a YouTube video titled: '"
-                + videoTitle +
-                "'. This is a famous 1987 pop song by Rick Astley. "
-                + "Answer the user's question based on general knowledge about this song.\n\n"
-                + "User question: " + message;
+            String message = request.get("message");
+            String videoTitle = request.get("videoTitle");
 
-        RestTemplate restTemplate = new RestTemplate();
+            String prompt = "You are an AI assistant helping with a YouTube video titled: '"
+                    + videoTitle +
+                    "'. Answer clearly.\n\n"
+                    + "User question: " + message;
 
-        String url = "http://localhost:11434/api/generate";
+            RestTemplate restTemplate = new RestTemplate();
+            String url = "http://localhost:11434/api/generate";
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("model", "llama3");
-        body.put("prompt", prompt);
-        body.put("stream", false);
+            Map<String, Object> body = new HashMap<>();
+            body.put("model", "phi");
+            body.put("prompt", prompt);
+            body.put("stream", false);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
 
-        return response.getBody().get("response").toString();
+            return response.getBody().get("response").toString();
+
+        } catch (Exception e) {
+            return "⚠ AI not connected. Make sure Ollama is running.";
+        }
     }
 }
