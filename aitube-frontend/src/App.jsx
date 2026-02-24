@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 function App() {
+  const [loading, setLoading] = useState(false);
   const [videos, setVideos] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [search, setSearch] = useState("react");
@@ -17,7 +18,7 @@ const sendMessage = async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       message: message,
-     videoTitle: selectedVideo?.snippet?.title || ""
+    videoId: selectedVideo?.id?.videoId
 
     })
   });
@@ -27,16 +28,24 @@ const sendMessage = async () => {
   setChat((prev) => [...prev, { user: message, bot: data }]);
 
   setMessage("");
+
+  setTimeout(() => {
+    const chatBox = document.querySelector(".chat-box");
+    chatBox?.scrollTo(0, chatBox.scrollHeight);
+  }, 100);
 };
 
+useEffect(() => {
+  setLoading(true);
 
-  useEffect(() => {
-    fetch(`http://localhost:9095/youtube/search?query=${search}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setVideos(data.items);
-      });
-  }, [search]);
+  fetch(`http://localhost:9095/youtube/search?query=${search}`)
+    .then(res => res.json())
+    .then(data => {
+      setVideos(data.items);
+      setLoading(false);
+    });
+}, [search]);
+ 
 
   return (
     <div className="app">
@@ -53,10 +62,23 @@ const sendMessage = async () => {
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="content">
-        {!selectedVideo ? (
-          <div className="video-grid">
-            {videos.map((video) => (
+     <div className="main-layout">
+  <div className="sidebar">
+    <p>🏠 Home</p>
+    <p>🔥 Trending</p>
+    <p>📚 Library</p>
+  </div>
+
+  <div className="content">
+    
+  
+
+       {!selectedVideo ? (
+  <>
+    {loading && <div className="loader">Loading...</div>}
+
+    <div className="video-grid">
+      {videos.map((video) => (
               <div
                 key={video.id.videoId}
                 className="video-card"
@@ -69,14 +91,17 @@ const sendMessage = async () => {
                 <p>{video.snippet.title}</p>
               </div>
             ))}
-          </div>
+          </div></>
         ) : (
           <div className="watch-page">
+            <button className="back-btn" onClick={() => setSelectedVideo(null)}>
+  ← Back
+</button>
             <div className="video-section">
               <iframe
                 width="100%"
                 height="500"
-                src={`https://www.youtube.com/embed/${selectedVideo.id.videoId}`}
+                src={`https://www.youtube.com/embed/${selectedVideo?.id?.videoId}`}
                 frameBorder="0"
                 allowFullScreen
                 title="video"
@@ -87,14 +112,14 @@ const sendMessage = async () => {
             <div className="ai-section">
   <h3>AI Assistant</h3>
 
-  <div className="chat-box">
-    {chat.map((c, index) => (
-      <div key={index}>
-        <p><b>You:</b> {c.user}</p>
-        <p><b>AI:</b> {c.bot}</p>
-      </div>
-    ))}
-  </div>
+ <div className="chat-box">
+  {chat.map((c, index) => (
+    <div key={index}>
+      <div className="user-msg">{c.user}</div>
+      <div className="ai-msg">{c.bot}</div>
+    </div>
+  ))}
+</div>
 
   <div className="input-area">
     <input
@@ -112,7 +137,9 @@ const sendMessage = async () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+      </div>
+    
   );
 }
 
