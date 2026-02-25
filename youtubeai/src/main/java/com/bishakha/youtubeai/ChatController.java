@@ -19,7 +19,7 @@ public class ChatController {
                 + "?part=snippet"
                 + "&q=" + query
                 + "&type=video"
-                + "&maxResults=20"
+                + "&maxResults=50"
                 + "&key=" + apiKey;
 
         RestTemplate restTemplate = new RestTemplate();
