@@ -147,12 +147,33 @@ function App() {
       <div className="main-layout">
 
         {/* SIDEBAR */}
-        <div className="sidebar">
-          <p className={activeMenu === "home" ? "active" : ""} onClick={() => handleMenuClick("home")}>🏠 Home</p>
-          <p className={activeMenu === "trending" ? "active" : ""} onClick={() => handleMenuClick("trending")}>🔥 Trending</p>
-          <p className={activeMenu === "library" ? "active" : ""} onClick={() => handleMenuClick("library")}>📚 Library</p>
-          <p className={activeMenu === "liked" ? "active" : ""} onClick={() => handleMenuClick("liked")}>❤️ Liked Videos</p>
-        </div>
+       <div className="sidebar">
+
+  <p className={activeMenu==="home"?"active":""} onClick={()=>handleMenuClick("home")}>
+    🏠 Home
+  </p>
+
+  <p className={activeMenu==="trending"?"active":""} onClick={()=>handleMenuClick("trending")}>
+    🔥 Trending
+  </p>
+
+  <p className={activeMenu==="library"?"active":""} onClick={()=>handleMenuClick("library")}>
+    📚 Library
+  </p>
+
+  <hr />
+
+  <p onClick={()=>setSearch("subscriptions videos")}>📺 Subscriptions</p>
+  <p onClick={()=>setSearch("watch later videos")}>⏳ Watch Later</p>
+  <p onClick={()=>setSearch("liked videos")}>❤️ Liked Videos</p>
+  <p onClick={()=>setSearch("history videos")}>🕒 History</p>
+  <p onClick={()=>setSearch("my channel videos")}>👤 Your Channel</p>
+
+  <hr />
+
+  <p onClick={()=>setSearch("AI summary technology")}>🤖 AI Summary</p>
+
+</div>
 
         {/* CONTENT */}
         <div className="content">
@@ -226,24 +247,44 @@ function App() {
 
         {/* RIGHT PANEL */}
         <div className="right-panel">
-          <h4>🔥 Trending Topics</h4>
+  <h4>🔥 Trending Topics</h4>
 
-          <p onClick={() => { setSearch("React 19 Updates"); setActiveMenu("home"); setSelectedVideo(null); }}>
-            React 19 Updates
-          </p>
+  <p onClick={()=>{setSearch("React 19 Updates");setSelectedVideo(null);}}>
+    React 19 Updates
+  </p>
 
-          <p onClick={() => { setSearch("Artificial Intelligence"); setActiveMenu("home"); setSelectedVideo(null); }}>
-            AI in 2026
-          </p>
+  <p onClick={()=>{setSearch("Artificial Intelligence");setSelectedVideo(null);}}>
+    AI in 2026
+  </p>
 
-          <p onClick={() => { setSearch("Java Full Course"); setActiveMenu("home"); setSelectedVideo(null); }}>
-            Java Full Course
-          </p>
+  <p onClick={()=>{setSearch("Java Full Course");setSelectedVideo(null);}}>
+    Java Full Course
+  </p>
 
-          <p onClick={() => { setSearch("System Design"); setActiveMenu("home"); setSelectedVideo(null); }}>
-            System Design
-          </p>
-        </div>
+  <p onClick={()=>{setSearch("System Design");setSelectedVideo(null);}}>
+    System Design
+  </p>
+
+  <hr />
+
+  <h4>💡 Quick Links</h4>
+
+  <p onClick={()=>setSearch("Web Development tutorials")}>
+    🌐 Web Development
+  </p>
+
+  <p onClick={()=>setSearch("Data Structures full course")}>
+    📊 Data Structures
+  </p>
+
+  <p onClick={()=>setSearch("Machine Learning beginner")}>
+    🤖 Machine Learning
+  </p>
+
+  <p onClick={()=>setSearch("Interview preparation coding")}>
+    🎯 Interview Prep
+  </p>
+</div>
 
       </div>
     </div>
