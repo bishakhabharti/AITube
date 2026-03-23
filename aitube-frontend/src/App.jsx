@@ -1,21 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 function App() {
+  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:9095";
 
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
   const [videos, setVideos] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [search, setSearch] = useState("react");
 
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState("");
   const [voiceStatus, setVoiceStatus] = useState("");
   const [activeMenu, setActiveMenu] = useState("home");
+  const chatBoxRef = useRef(null);
 
   const handleMenuClick = (menu) => {
     setActiveMenu(menu);
     setSelectedVideo(null);
+    setChat([]);
+    setMessage("");
+    setChatError("");
 
     if (menu === "home") setSearch("react");
     if (menu === "trending") setSearch("trending videos");
@@ -58,59 +66,99 @@ function App() {
     };
   };
 
+  const sendChatRequest = async (text) => {
+    const cleanText = text?.trim();
+    if (!cleanText) return;
+    if (chatLoading) return;
+
+    setChatLoading(true);
+    setChatError("");
+
+    try {
+      const res = await fetch(`${API_BASE}/ai/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: cleanText,
+          videoTitle: selectedVideo?.snippet?.title,
+          transcript: selectedVideo?.snippet?.description,
+        }),
+      });
+
+      const data = await res.text();
+      if (!res.ok) throw new Error(data || `Request failed (${res.status})`);
+
+      setChat((prev) => [...prev, { user: cleanText, bot: data }]);
+    } catch (e) {
+      setChat((prev) => [
+        ...prev,
+        {
+          user: cleanText,
+          bot: "AITube AI is unavailable right now. Start the backend server and try again.",
+        },
+      ]);
+      setChatError("Backend not connected");
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
   const sendDirectMessage = async (text) => {
-    const res = await fetch("http://localhost:9095/ai/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        videoTitle: selectedVideo?.snippet?.title,
-        transcript: selectedVideo?.snippet?.description
-      })
-    });
-
-    const data = await res.text();
-
-    setChat((prev) => [...prev, { user: text, bot: data }]);
+    await sendChatRequest(text);
   };
 
   const sendMessage = async () => {
-    if (!message) return;
-
-    const res = await fetch("http://localhost:9095/ai/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: message,
-        videoTitle: selectedVideo?.snippet?.title,
-        transcript: selectedVideo?.snippet?.description
-      })
-    });
-
-    const data = await res.text();
-
-    setChat((prev) => [...prev, { user: message, bot: data }]);
+    await sendChatRequest(message);
     setMessage("");
-
-    setTimeout(() => {
-      const chatBox = document.querySelector(".chat-box");
-      chatBox?.scrollTo(0, chatBox.scrollHeight);
-    }, 100);
   };
 
   useEffect(() => {
     if (!search) return;
 
     setLoading(true);
+    setSearchError("");
 
-    fetch(`http://localhost:9095/youtube/search?query=${search}`)
-      .then(res => res.json())
-      .then(data => {
-        setVideos(data.items || []);
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/youtube/search?query=${encodeURIComponent(search)}`,
+          { signal: controller.signal }
+        );
+
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          setSearchError(data?.error || `Search failed (${res.status})`);
+          setVideos([]);
+          return;
+        }
+
+        setVideos(data?.items || []);
+        if (data?.error) setSearchError(data.error);
+      } catch (e) {
+        if (e?.name !== "AbortError") {
+          setSearchError("Failed to fetch videos. Is the backend running?");
+          setVideos([]);
+        }
+      } finally {
         setLoading(false);
-      });
+      }
+    })();
+
+    return () => controller.abort();
 
   }, [search]);
+
+  useEffect(() => {
+    // Keep the newest chat messages visible.
+    if (!chatBoxRef.current) return;
+    chatBoxRef.current.scrollTo({
+      top: chatBoxRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [chat, chatLoading]);
 
   return (
     <div className="app">
@@ -129,6 +177,9 @@ function App() {
                 if (!value) return;
                 setSearch(value);
                 setSelectedVideo(null);
+                setChat([]);
+                setMessage("");
+                setChatError("");
               }
             }}
           />
@@ -163,15 +214,15 @@ function App() {
 
   <hr />
 
-  <p onClick={()=>setSearch("subscriptions videos")}>📺 Subscriptions</p>
-  <p onClick={()=>setSearch("watch later videos")}>⏳ Watch Later</p>
-  <p onClick={()=>setSearch("liked videos")}>❤️ Liked Videos</p>
-  <p onClick={()=>setSearch("history videos")}>🕒 History</p>
-  <p onClick={()=>setSearch("my channel videos")}>👤 Your Channel</p>
+  <p onClick={()=>{setSearch("subscriptions videos");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>📺 Subscriptions</p>
+  <p onClick={()=>{setSearch("watch later videos");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>⏳ Watch Later</p>
+  <p onClick={()=>{setSearch("liked videos");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>❤️ Liked Videos</p>
+  <p onClick={()=>{setSearch("history videos");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>🕒 History</p>
+  <p onClick={()=>{setSearch("my channel videos");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>👤 Your Channel</p>
 
   <hr />
 
-  <p onClick={()=>setSearch("AI summary technology")}>🤖 AI Summary</p>
+  <p onClick={()=>{setSearch("AI summary technology");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>🤖 AI Summary</p>
 
 </div>
 
@@ -181,16 +232,29 @@ function App() {
           {!selectedVideo ? (
             <>
               {loading && <div className="loader">⏳ Loading...</div>}
+              {searchError && <div className="search-error">⚠️ {searchError}</div>}
 
               <div className="video-grid">
                 {videos.map((video) => (
                   <div
                     key={video.id.videoId}
                     className="video-card"
-                    onClick={() => setSelectedVideo(video)}
+                    onClick={() => {
+                      setSelectedVideo(video);
+                      setChat([]);
+                      setMessage("");
+                      setChatError("");
+                    }}
                   >
-                    <img src={video.snippet.thumbnails.high.url} alt="" />
-                    <p>{video.snippet.title}</p>
+                    <img
+                      src={
+                        video?.snippet?.thumbnails?.high?.url ||
+                        video?.snippet?.thumbnails?.default?.url ||
+                        ""
+                      }
+                      alt=""
+                    />
+                    <p>{video?.snippet?.title || "Untitled video"}</p>
                   </div>
                 ))}
               </div>
@@ -198,7 +262,15 @@ function App() {
           ) : (
             <div className="watch-page">
 
-              <button className="back-btn" onClick={() => setSelectedVideo(null)}>
+              <button
+                className="back-btn"
+                onClick={() => {
+                  setSelectedVideo(null);
+                  setChat([]);
+                  setMessage("");
+                  setChatError("");
+                }}
+              >
                 ← Back
               </button>
 
@@ -217,7 +289,11 @@ function App() {
               <div className="ai-section">
                 <h3>🤖 AI Assistant</h3>
 
-                <div className="chat-box">
+                {chatError && (
+                  <div className="search-error">⚠️ {chatError}</div>
+                )}
+
+                <div className="chat-box" ref={chatBoxRef}>
                   {chat.map((c, index) => (
                     <div key={index}>
                       <div className="user-msg">{c.user}</div>
@@ -233,8 +309,15 @@ function App() {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                   />
-                  <button onClick={startVoiceInput}>🎤</button>
-                  <button onClick={sendMessage}>Send</button>
+                  <button onClick={startVoiceInput} disabled={chatLoading}>
+                    🎤
+                  </button>
+                  <button
+                    onClick={sendMessage}
+                    disabled={chatLoading || !message.trim()}
+                  >
+                    {chatLoading ? "Sending..." : "Send"}
+                  </button>
                 </div>
 
                 {voiceStatus && <p className="voice-status">{voiceStatus}</p>}
@@ -249,19 +332,19 @@ function App() {
         <div className="right-panel">
   <h4>🔥 Trending Topics</h4>
 
-  <p onClick={()=>{setSearch("React 19 Updates");setSelectedVideo(null);}}>
+  <p onClick={()=>{setSearch("React 19 Updates");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>
     React 19 Updates
   </p>
 
-  <p onClick={()=>{setSearch("Artificial Intelligence");setSelectedVideo(null);}}>
+  <p onClick={()=>{setSearch("Artificial Intelligence");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>
     AI in 2026
   </p>
 
-  <p onClick={()=>{setSearch("Java Full Course");setSelectedVideo(null);}}>
+  <p onClick={()=>{setSearch("Java Full Course");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>
     Java Full Course
   </p>
 
-  <p onClick={()=>{setSearch("System Design");setSelectedVideo(null);}}>
+  <p onClick={()=>{setSearch("System Design");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>
     System Design
   </p>
 
@@ -269,19 +352,19 @@ function App() {
 
   <h4>💡 Quick Links</h4>
 
-  <p onClick={()=>setSearch("Web Development tutorials")}>
+  <p onClick={()=>{setSearch("Web Development tutorials");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>
     🌐 Web Development
   </p>
 
-  <p onClick={()=>setSearch("Data Structures full course")}>
+  <p onClick={()=>{setSearch("Data Structures full course");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>
     📊 Data Structures
   </p>
 
-  <p onClick={()=>setSearch("Machine Learning beginner")}>
+  <p onClick={()=>{setSearch("Machine Learning beginner");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>
     🤖 Machine Learning
   </p>
 
-  <p onClick={()=>setSearch("Interview preparation coding")}>
+  <p onClick={()=>{setSearch("Interview preparation coding");setSelectedVideo(null);setChat([]);setMessage("");setChatError("");}}>
     🎯 Interview Prep
   </p>
 </div>

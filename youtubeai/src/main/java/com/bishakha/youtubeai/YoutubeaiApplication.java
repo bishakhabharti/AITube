@@ -13,12 +13,11 @@ public class YoutubeaiApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(YoutubeaiApplication.class, args);
 	}
-
-	@Bean
-	CommandLineRunner runner(LlamaService llamaService) {
-		return args -> {
-			System.out.println("🔥 Warming up LLaMA model...");
-			llamaService.generate("Hello");
-		};
-	}
 }
+	//@Bean
+	//CommandLineRunner runner(LlamaService llamaService) {
+		//return args -> {
+			//System.out.println("🔥 Warming up LLaMA model...");
+			//llamaService.generate("Hello");
+		//};
+	//}
